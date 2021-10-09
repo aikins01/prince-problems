@@ -4,147 +4,96 @@
 #include <vector>
 #include <string>
 #include <sstream>
-#include <algorithm>
-#include <cmath>
-#include <cstdio>
-#include <cstring>
-#include <stack>
-#include <queue>
-#include <set>
-#include <map>
-#include <bitset>
-#include <climits>
-#include <cassert>
-#include <iomanip>
-#include <unordered_map>
-#include <unordered_set>
-#include <functional>
-#include <numeric>
-#include <bits/stdc++.h>
-
 using namespace std;
-
-class Cell {
-public:
-    Cell() {
-        visited = false;
-        blocked = false;
-    }
-    bool visited;
-    bool blocked;
-};
 
 class Maze {
 public:
-    Maze(int rows, int cols) {
-        this->rows = rows;
-        this->cols = cols;
-        cells = new Cell[rows * cols];
-    }
-    ~Maze() {
-        delete[] cells;
-    }
-    void generate() {
-        srand(time(NULL));
-        for (int i = 0; i < rows * cols; i++) {
-            cells[i].visited = false;
-            cells[i].blocked = false;
-        }
-        int current = rand() % (rows * cols);
-        cells[current].visited = true;
-        while (true) {
-            int neighbours[4];
-            neighbours[0] = current - cols;
-            neighbours[1] = current + cols;
-            neighbours[2] = current - 1;
-            neighbours[3] = current + 1;
-            int num_neighbours = 0;
-            for (int i = 0; i < 4; i++) {
-                if (neighbours[i] >= 0 && neighbours[i] < rows * cols) {
-                    if (!cells[neighbours[i]].visited) {
-                        num_neighbours++;
-                    }
-                }
-            }
-            if (num_neighbours == 0) {
-                break;
-            }
-            int next = rand() % num_neighbours;
-            int count = 0;
-            for (int i = 0; i < 4; i++) {
-                if (neighbours[i] >= 0 && neighbours[i] < rows * cols) {
-                    if (!cells[neighbours[i]].visited) {
-                        if (count == next) {
-                            if (i == 0) {
-                                cells[current].blocked = true;
-                                cells[neighbours[i]].blocked = true;
-                            } else if (i == 1) {
-                                cells[current].blocked = true;
-                                cells[neighbours[i]].blocked = true;
-                            } else if (i == 2) {
-                                cells[current].blocked = true;
-                            } else if (i == 3) {
-                                cells[current].blocked = true;
-                            }
-                            cells[neighbours[i]].visited = true;
-                            current = neighbours[i];
-                            break;
-                        }
-                        count++;
-                    }
-                }
-            }
-        }
-    }
-    void print() {
+    Maze(int rows, int cols, int seed = 0) {
+        srand(seed);
         for (int i = 0; i < rows; i++) {
+            vector<bool> row;
             for (int j = 0; j < cols; j++) {
-                if (cells[i * cols + j].blocked) {
-                    cout << "---";
-                } else {
-                    cout << "   ";
-                }
+                row.push_back(rand() % 2);
             }
-            cout << endl;
-            for (int j = 0; j < cols; j++) {
-                if (cells[i * cols + j].blocked) {
-                    cout << "|";
-                } else {
-                    cout << " ";
-                }
-                if (cells[i * cols + j].visited) {
-                    cout << ".";
-                } else {
-                    cout << " ";
-                }
-            }
-            cout << endl;
+            maze.push_back(row);
         }
-        for (int j = 0; j < cols; j++) {
-            if (cells[(rows - 1) * cols + j].blocked) {
-                cout << "---";
-            } else {
-                cout << "   ";
-            }
-        }
-        cout << endl;
     }
+
+    void print() {
+        for (int i = 0; i < maze.size(); i++) {
+            for (int j = 0; j < maze[i].size(); j++) {
+                if (i == 0 && j == 0) {
+                    cout << "+";
+                } else if (i == maze.size() - 1 && j == maze[i].size() - 1) {
+                    cout << "+";
+                } else if (i == 0) {
+                    cout << "---";
+                } else if (j == 0) {
+                    cout << "|";
+                } else if (maze[i][j]) {
+                    cout << "   ";
+                } else {
+                    cout << " . ";
+                }
+            }
+            cout << endl;
+        }
+    }
+
+    bool findPath(int fromRow, int fromCol, int toRow, int toCol) {
+        if (fromRow == toRow && fromCol == toCol) {
+            return true;
+        }
+        maze[fromRow][fromCol] = true;
+        vector<pair<int, int>> neighbours = getNeighbours(fromRow, fromCol);
+        for (int i = 0; i < neighbours.size(); i++) {
+            int nRow = neighbours[i].first;
+            int nCol = neighbours[i].second;
+            if (maze[nRow][nCol] == false) {
+                if (findPath(nRow, nCol, toRow, toCol)) {
+                    return true;
+                }
+            }
+        }
+        maze[fromRow][fromCol] = false;
+        return false;
+    }
+
+    vector<pair<int, int>> getNeighbours(int row, int col) {
+        vector<pair<int, int>> neighbours;
+        if (row > 0) {
+            neighbours.push_back(make_pair(row - 1, col));
+        }
+        if (row < maze.size() - 1) {
+            neighbours.push_back(make_pair(row + 1, col));
+        }
+        if (col > 0) {
+            neighbours.push_back(make_pair(row, col - 1));
+        }
+        if (col < maze[row].size() - 1) {
+            neighbours.push_back(make_pair(row, col + 1));
+        }
+        return neighbours;
+    }
+
 private:
-    int rows;
-    int cols;
-    Cell* cells;
+    vector<vector<bool>> maze;
 };
 
-int main(int argc, char* argv[]) {
-    int rows = atoi(argv[1]);
-    int cols = atoi(argv[2]);
-    if (argc == 4) {
-        srand(atoi(argv[3]));
+int main(int argc, char *argv[]) {
+    if (argc == 3) {
+        int rows = atoi(argv[1]);
+        int cols = atoi(argv[2]);
+        Maze m(rows, cols);
+        m.print();
+    } else if (argc == 4) {
+        int rows = atoi(argv[1]);
+        int cols = atoi(argv[2]);
+        int seed = atoi(argv[3]);
+        Maze m(rows, cols, seed);
+        m.print();
     } else {
-        srand(time(NULL));
+        cout << "Usage: " << argv[0] << " <rows> <cols> [<seed>]" << endl;
     }
-    Maze maze(rows, cols);
-    maze.generate();
-    maze.print();
     return 0;
 }
